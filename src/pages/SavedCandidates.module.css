@@ -1,0 +1,21 @@
+
+.saved-candidates-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+  }
+  
+  .saved-candidates-container h1 {
+    font-size: 2em;
+    margin-bottom: 20px;
+  }
+  
+  .candidate-list {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .candidate-list li {
+    margin-bottom: 20px;
+  }
