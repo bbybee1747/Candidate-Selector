@@ -1,42 +1,93 @@
-// pages/CandidateSearch.tsx
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { searchGithubUser } from "../api/API";
 import type { Candidate } from "../interfaces/Candidate.interface";
 import styles from "./CandidateSearch.module.css";
 
-const CandidateSearch = () => {
-  const [currentCandidate, setCurrentCandidate] = useState<Candidate>({
-    id: "",
-    name: null,
-    login: "",
-    location: null,
-    avatar_url: "",
-    email: null,
-    html_url: "",
-    company: null,
-  });
+const defaultCandidate: Candidate = {
+  id: "",
+  name: null,
+  login: "",
+  location: null,
+  avatar_url: "",
+  email: null,
+  html_url: "",
+  company: null,
+};
 
+const CandidateSearch = () => {
+  const [currentCandidate, setCurrentCandidate] =
+    useState<Candidate>(defaultCandidate);
   const [searchInput, setSearchInput] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
-  const saveCandidate = (candidate: Candidate) => {
-    const savedCandidates = JSON.parse(
-      localStorage.getItem("savedCandidates") || "[]"
-    );
-    const isDuplicate = savedCandidates.some(
-      (c: Candidate) => c.id === candidate.id
-    );
+  useEffect(() => {
+    fetchNextCandidate();
+  }, []);
 
-    if (!isDuplicate) {
-      savedCandidates.push(candidate);
-      localStorage.setItem("savedCandidates", JSON.stringify(savedCandidates));
+  const fetchNextCandidate = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await fetch(
+        "https://api.github.com/search/users?q=repos:>1&per_page=1&sort=joined&order=desc",
+        {
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_GITHUB_TOKEN}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`GitHub API Error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.items || data.items.length === 0) {
+        throw new Error("No candidates found.");
+      }
+
+      const user = data.items[0];
+      const candidate = await searchGithubUser(user.login);
+
+      if (candidate) {
+        setCurrentCandidate({
+          id: candidate.id || "",
+          name: candidate.name || null,
+          login: candidate.login || "",
+          location: candidate.location || null,
+          avatar_url: candidate.avatar_url || "",
+          email: candidate.email || null,
+          html_url: candidate.html_url || "",
+          company: candidate.company || null,
+        });
+      } else {
+        setError("Failed to fetch candidate details.");
+      }
+    } catch (err) {
+      console.error("Fetch Next Candidate Error:", err);
+      setError(err instanceof Error ? err.message : "Unknown error occurred.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  async function searchForCandidate(
-    event: FormEvent<HTMLFormElement>
-  ): Promise<void> {
+  const saveCandidate = (candidate: Candidate) => {
+    const savedKey = "githubJobCandidates";
+    const savedCandidates = JSON.parse(localStorage.getItem(savedKey) || "[]");
+
+    if (!savedCandidates.some((c: Candidate) => c.id === candidate.id)) {
+      savedCandidates.push(candidate);
+      localStorage.setItem(savedKey, JSON.stringify(savedCandidates));
+    }
+
+    fetchNextCandidate();
+  };
+
+  const searchForCandidate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!searchInput.trim()) {
       setError("Please enter a valid GitHub username.");
@@ -48,34 +99,27 @@ const CandidateSearch = () => {
 
     try {
       const candidate = await searchGithubUser(searchInput);
-      if (
-        candidate &&
-        typeof candidate === "object" &&
-        !Array.isArray(candidate)
-      ) {
-        setCurrentCandidate({
-          id: candidate.id || null,
-          name: candidate.name || null,
-          login: candidate.login || "",
-          location: candidate.location || null,
-          avatar_url: candidate.avatar_url || "",
-          email: candidate.email || null,
-          html_url: candidate.html_url || "",
-          company: candidate.company || null,
-        });
-      } else {
-        throw new Error("Invalid candidate data returned from API.");
+      if (!candidate) {
+        throw new Error("No candidate found with the given username.");
       }
+      setCurrentCandidate({
+        id: candidate.id || null,
+        name: candidate.name || null,
+        login: candidate.login || "",
+        location: candidate.location || null,
+        avatar_url: candidate.avatar_url || "",
+        email: candidate.email || null,
+        html_url: candidate.html_url || "",
+        company: candidate.company || null,
+      });
     } catch (err) {
-      if (err instanceof Error) {
-        setError("Error searching for candidate: " + err.message);
-      } else {
-        setError("An unexpected error occurred.");
-      }
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred."
+      );
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     <div className={styles["candidate-search"]}>
@@ -113,11 +157,11 @@ const CandidateSearch = () => {
             {currentCandidate.company || "Not available"}
           </p>
           <p>
-            <strong>Avatar:</strong>{" "}
+            <strong>Avatar:</strong>
             <img
               src={currentCandidate.avatar_url}
               alt={`${currentCandidate.name || currentCandidate.login} avatar`}
-              style={{ width: 100, height: 100, borderRadius: "50%" }}
+              className={styles.avatar}
             />
           </p>
           <p>
@@ -138,18 +182,7 @@ const CandidateSearch = () => {
           </button>
           <button
             className={styles["skip-button"]}
-            onClick={() =>
-              setCurrentCandidate({
-                id: "",
-                name: null,
-                login: "",
-                location: null,
-                avatar_url: "",
-                email: null,
-                html_url: "",
-                company: null,
-              })
-            }
+            onClick={() => fetchNextCandidate()}
           >
             Skip
           </button>

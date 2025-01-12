@@ -1,6 +1,6 @@
 // API.tsx
 const searchGithub = async () => {
-  console.log("VITE_GITHUB_TOKEN:", import.meta.env.VITE_GITHUB_TOKEN); // Add this line
+  console.log("VITE_GITHUB_TOKEN:", import.meta.env.VITE_GITHUB_TOKEN);
   try {
     const start = Math.floor(Math.random() * 100000000) + 1;
     const response = await fetch(

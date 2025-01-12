@@ -7,14 +7,20 @@ import styles from "./SavedCandidates.module.css";
 const SavedCandidates = () => {
   const [savedCandidates, setSavedCandidates] = useState<Candidate[]>([]);
 
+  // Load saved candidates from localStorage on initial render
   useEffect(() => {
-    // Load saved candidates from local storage
-    const savedCandidates = localStorage.getItem("savedCandidates");
-    if (savedCandidates) {
-      setSavedCandidates(JSON.parse(savedCandidates));
+    try {
+      const savedData = localStorage.getItem("savedCandidates");
+      if (savedData) {
+        setSavedCandidates(JSON.parse(savedData));
+      }
+    } catch (error) {
+      console.error("Failed to parse saved candidates:", error);
+      setSavedCandidates([]); // Fallback to an empty state
     }
   }, []);
 
+  // Remove candidate and update localStorage
   const removeFromStorage = (candidateId: string) => {
     const updatedCandidates = savedCandidates.filter(
       (candidate) => candidate.id !== candidateId
