@@ -25,13 +25,21 @@ const CandidateSearch = () => {
     fetchNextCandidate();
   }, []);
 
+  const [candidateQueue, setCandidateQueue] = useState<Candidate[]>([]);
+
   const fetchNextCandidate = async () => {
     try {
       setLoading(true);
       setError("");
 
+      if (candidateQueue.length > 0) {
+        setCurrentCandidate(candidateQueue.shift()!);
+        setCandidateQueue([...candidateQueue]);
+        return;
+      }
+
       const response = await fetch(
-        "https://api.github.com/search/users?q=repos:>1&per_page=1&sort=joined&order=desc",
+        "https://api.github.com/search/users?q=repos:>1&per_page=50&sort=joined&order=desc",
         {
           headers: {
             Authorization: `Bearer ${import.meta.env.VITE_GITHUB_TOKEN}`,
@@ -45,28 +53,21 @@ const CandidateSearch = () => {
       }
 
       const data = await response.json();
+      const users = data.items;
 
-      if (!data.items || data.items.length === 0) {
+      if (!users || users.length === 0) {
         throw new Error("No candidates found.");
       }
 
-      const user = data.items[0];
-      const candidate = await searchGithubUser(user.login);
+      const candidates: Candidate[] = await Promise.all(
+        users.map(
+          (user: { login: string }): Promise<Candidate> =>
+            searchGithubUser(user.login)
+        )
+      );
 
-      if (candidate) {
-        setCurrentCandidate({
-          id: candidate.id || "",
-          name: candidate.name || null,
-          login: candidate.login || "",
-          location: candidate.location || null,
-          avatar_url: candidate.avatar_url || "",
-          email: candidate.email || null,
-          html_url: candidate.html_url || "",
-          company: candidate.company || null,
-        });
-      } else {
-        setError("Failed to fetch candidate details.");
-      }
+      setCandidateQueue(candidates.filter(Boolean));
+      setCurrentCandidate(candidates[0]);
     } catch (err) {
       console.error("Fetch Next Candidate Error:", err);
       setError(err instanceof Error ? err.message : "Unknown error occurred.");
@@ -183,8 +184,8 @@ const CandidateSearch = () => {
           <button
             className={styles["skip-button"]}
             onClick={() => {
+              window.scrollTo(0, 0);
               fetchNextCandidate();
-              return Response;
             }}
           >
             Skip
