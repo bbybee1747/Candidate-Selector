@@ -14,6 +14,14 @@ const defaultCandidate: Candidate = {
   company: null,
 };
 
+const shuffleArray = (array: Candidate[]) => {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+};
+
 const CandidateSearch = () => {
   const [currentCandidate, setCurrentCandidate] =
     useState<Candidate>(defaultCandidate);
@@ -58,15 +66,15 @@ const CandidateSearch = () => {
       if (!users || users.length === 0) {
         throw new Error("No candidates found.");
       }
-
       const candidates: Candidate[] = await Promise.all(
         users.map(
           (user: { login: string }): Promise<Candidate> =>
             searchGithubUser(user.login)
         )
       );
+      setCandidateQueue(shuffleArray(candidates.filter(Boolean)));
 
-      setCandidateQueue(candidates.filter(Boolean));
+      setCandidateQueue(shuffleArray(candidates.filter(Boolean)));
       setCurrentCandidate(candidates[0]);
     } catch (err) {
       console.error("Fetch Next Candidate Error:", err);
