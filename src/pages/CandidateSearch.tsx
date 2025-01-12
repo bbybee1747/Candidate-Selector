@@ -182,7 +182,10 @@ const CandidateSearch = () => {
           </button>
           <button
             className={styles["skip-button"]}
-            onClick={() => fetchNextCandidate()}
+            onClick={() => {
+              fetchNextCandidate();
+              return Response;
+            }}
           >
             Skip
           </button>
