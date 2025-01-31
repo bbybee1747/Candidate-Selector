@@ -1,34 +1,33 @@
-// components/CandidateCard.tsx
-import { Candidate } from "../interfaces/Candidate.interface";
 import styles from "./CandidateCard.module.css";
+import { FaPlusCircle, FaMinusCircle } from "react-icons/fa";
+import { Candidate } from "../interfaces/Candidate.interface";
 
 interface CandidateCardProps {
   currentCandidate: Candidate;
-  removeFromStorage: (candidateId: string) => void;
+  saveCandidate?: (candidate: Candidate) => void;
+  skipCandidate?: (id: number) => void;
+  removeFromStorage?: (candidateId: number) => void;
 }
 
 const CandidateCard: React.FC<CandidateCardProps> = ({
   currentCandidate,
+  saveCandidate,
+  skipCandidate,
   removeFromStorage,
 }) => {
+  console.log("Rendering candidate:", currentCandidate);
+
   return (
     <li className={styles["candidate-card"]}>
       <img
-        src={
-          currentCandidate.avatar_url ||
-          "https://via.placeholder.com/150?text=No+Avatar"
-        }
-        alt={`Avatar of ${
-          currentCandidate.name || currentCandidate.login || "unknown user"
-        }`}
+        src={currentCandidate.avatar_url || "default-avatar.png"}
+        alt={`${currentCandidate.name || currentCandidate.login} avatar`}
         className={styles["candidate-avatar"]}
       />
       <div className={styles["candidate-details"]}>
-        <h2>
-          {currentCandidate.name || currentCandidate.login || "Unknown User"}
-        </h2>
+        <h2>{currentCandidate.name || currentCandidate.login}</h2>
         <p>
-          <strong>Username:</strong> {currentCandidate.login || "Not available"}
+          <strong>Username:</strong> {currentCandidate.login || "N/A"}
         </p>
         <p>
           <strong>Location:</strong>{" "}
@@ -52,15 +51,28 @@ const CandidateCard: React.FC<CandidateCardProps> = ({
           </a>
         </p>
       </div>
-      <button
-        className={styles["remove-button"]}
-        onClick={() => removeFromStorage(currentCandidate.id)}
-        aria-label={`Remove candidate ${
-          currentCandidate.name || currentCandidate.login
-        }`}
-      >
-        Remove
-      </button>
+      <div className={styles["action-buttons"]}>
+        {saveCandidate && (
+          <FaPlusCircle
+            className={styles["save-icon"]}
+            onClick={() => saveCandidate(currentCandidate)}
+          />
+        )}
+        {skipCandidate && (
+          <FaMinusCircle
+            className={styles["skip-icon"]}
+            onClick={() => skipCandidate(currentCandidate.id)}
+          />
+        )}
+        {removeFromStorage && (
+          <button
+            className={styles["remove-button"]}
+            onClick={() => removeFromStorage(currentCandidate.id)}
+          >
+            Remove
+          </button>
+        )}
+      </div>
     </li>
   );
 };

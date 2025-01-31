@@ -3,40 +3,38 @@ import { Candidate } from "../interfaces/Candidate.interface";
 import CandidateCard from "../components/CandidateCard";
 import styles from "./SavedCandidates.module.css";
 
-const SavedCandidates = () => {
+const SavedCandidates: React.FC = () => {
   const [savedCandidates, setSavedCandidates] = useState<Candidate[]>([]);
 
   useEffect(() => {
-    if (typeof localStorage !== "undefined") {
-      try {
-        const savedData = localStorage.getItem("githubJobCandidates");
-        console.log("Raw data from localStorage:", savedData);
-        if (savedData) {
-          setSavedCandidates(JSON.parse(savedData));
+    try {
+      const savedData = localStorage.getItem("githubJobCandidates");
+      if (savedData) {
+        const parsedCandidates: Candidate[] = JSON.parse(savedData);
+        if (Array.isArray(parsedCandidates)) {
+          setSavedCandidates(parsedCandidates);
         } else {
-          console.log(
-            "No candidates found in localStorage for key githubJobCandidates."
+          console.error(
+            "Invalid format in localStorage for githubJobCandidates."
           );
         }
-      } catch (error) {
-        console.error("Failed to parse githubJobCandidates:", error);
-        setSavedCandidates([]);
       }
-    } else {
-      console.warn("localStorage is not available.");
+    } catch (error) {
+      console.error("Error loading candidates from localStorage:", error);
     }
   }, []);
 
-  const removeFromStorage = (candidateId: string) => {
-    const updatedCandidates = savedCandidates.filter(
-      (candidate) => candidate.id !== candidateId
-    );
-    console.log("Updated candidates:", updatedCandidates);
-    setSavedCandidates(updatedCandidates);
-    localStorage.setItem(
-      "githubJobCandidates",
-      JSON.stringify(updatedCandidates)
-    );
+  const removeFromStorage = (candidateId: number) => {
+    setSavedCandidates((prevCandidates) => {
+      const updatedCandidates = prevCandidates.filter(
+        (candidate) => candidate.id !== candidateId
+      );
+      localStorage.setItem(
+        "githubJobCandidates",
+        JSON.stringify(updatedCandidates)
+      );
+      return updatedCandidates;
+    });
   };
 
   return (
@@ -46,16 +44,13 @@ const SavedCandidates = () => {
         <p>No candidates saved yet.</p>
       ) : (
         <ul className={styles["candidate-list"]}>
-          {savedCandidates.map((candidate) => {
-            console.log("Rendering candidate:", candidate);
-            return (
-              <CandidateCard
-                key={candidate.id}
-                currentCandidate={candidate}
-                removeFromStorage={removeFromStorage}
-              />
-            );
-          })}
+          {savedCandidates.map((candidate) => (
+            <CandidateCard
+              key={candidate.id}
+              currentCandidate={candidate}
+              removeFromStorage={removeFromStorage}
+            />
+          ))}
         </ul>
       )}
     </div>
