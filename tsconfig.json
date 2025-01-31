@@ -14,6 +14,7 @@
     "noEmit": true,
     "esModuleInterop": true,
     "jsx": "react-jsx",
+    "forceConsistentCasingInFileNames": true,
 
     /* Linting */
     "strict": true,
