@@ -1,4 +1,3 @@
-// API.tsx
 const searchGithub = async () => {
   console.log("VITE_GITHUB_TOKEN:", import.meta.env.VITE_GITHUB_TOKEN);
   try {
